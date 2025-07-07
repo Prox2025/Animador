@@ -28,7 +28,7 @@ def create_footer():
     color_ramp = nodes.new(type='ShaderNodeValToRGB')
 
     mapping.vector_type = 'POINT'
-    mapping.rotation_euler[2] = 1.5708  # rotacionar 90 graus no eixo Z
+    mapping.inputs['Rotation'].default_value[2] = 1.5708  # rotacionar 90 graus no eixo Z
 
     color_ramp.color_ramp.elements.new(0.25)
     color_ramp.color_ramp.elements.new(0.50)
