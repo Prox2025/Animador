@@ -1,0 +1,27 @@
+name: Render Rodapé Animado
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
+
+      - name: Instalar Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+
+      - name: Rodar Blender com o script
+        run: |
+          blender --background --factory-startup --python rodape_animado.py
+
+      - name: Upload do vídeo como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: rodape-animado
+          path: rodape_animado.webm
