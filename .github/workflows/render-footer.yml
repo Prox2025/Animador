@@ -1,30 +1,29 @@
-name: Gerar Rodapé Transparente PNG
+name: Renderizar Rodapé Transparente
 
 on:
   push:
     paths:
       - rodape_imagem_transparente.py
-  workflow_dispatch:
 
 jobs:
   render:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Clonar repositório
-      uses: actions/checkout@v4
+      - name: Clonar repositório
+        uses: actions/checkout@v4
 
-    - name: 🔧 Instalar Blender
-      run: |
-        sudo apt update
-        sudo apt install -y blender
+      - name: Instalar Blender e Xvfb
+        run: |
+          sudo apt update
+          sudo apt install -y blender xvfb
 
-    - name: 🎬 Executar Blender e gerar imagem
-      run: |
-        blender --background --factory-startup --python rodape_imagem_transparente.py
+      - name: Executar Blender com Xvfb
+        run: |
+          xvfb-run --auto-servernum -- blender --background --factory-startup --python rodape_imagem_transparente.py
 
-    - name: ⬆️ Enviar imagem gerada
-      uses: actions/upload-artifact@v4
-      with:
-        name: rodape-transparente
-        path: rodape_transparente.png
+      - name: Fazer upload da imagem gerada
+        uses: actions/upload-artifact@v4
+        with:
+          name: rodape-transparente
+          path: rodape_transparente.png
