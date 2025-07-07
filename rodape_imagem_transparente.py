@@ -7,34 +7,36 @@ def clear_scene():
 def create_footer():
     bpy.ops.mesh.primitive_plane_add(size=20, location=(0, -9.5, 0.01))
     rodape = bpy.context.active_object
-    rodape.scale[1] = 0.1  # Altura fina
+    rodape.scale[1] = 0.1
 
-    # Material com gradiente igual ao CSS
     mat = bpy.data.materials.new(name="RodapeMaterial")
     mat.use_nodes = True
     nodes = mat.node_tree.nodes
     links = mat.node_tree.links
 
-    # Limpa nós existentes
+    # Limpa nós
     for node in nodes:
         nodes.remove(node)
 
-    # Nós
-    output = nodes.new(type='ShaderNodeOutputMaterial')
-    transp = nodes.new(type='ShaderNodeBsdfTransparent')
-    diffuse = nodes.new(type='ShaderNodeBsdfDiffuse')
-    mix = nodes.new(type='ShaderNodeMixShader')
-    gradient = nodes.new(type='ShaderNodeTexGradient')
-    mapping = nodes.new(type='ShaderNodeMapping')
-    texcoord = nodes.new(type='ShaderNodeTexCoord')
-    color_ramp = nodes.new(type='ShaderNodeValToRGB')
+    # Cria nós
+    output = nodes.new('ShaderNodeOutputMaterial')
+    transp = nodes.new('ShaderNodeBsdfTransparent')
+    diffuse = nodes.new('ShaderNodeBsdfDiffuse')
+    mix = nodes.new('ShaderNodeMixShader')
+    gradient = nodes.new('ShaderNodeTexGradient')
+    mapping = nodes.new('ShaderNodeMapping')
+    texcoord = nodes.new('ShaderNodeTexCoord')
+    color_ramp = nodes.new('ShaderNodeValToRGB')
 
-    # Configura gradiente (vertical)
+    # Configurar rotação do gradiente
     mapping.vector_type = 'POINT'
-    mapping.inputs['Rotation'].default_value[2] = 1.5708  # Rotaciona em Z (90°)
+    mapping.inputs['Rotation'].default_value[2] = 1.5708  # 90 graus
 
-    # Gradiente escuro como CSS
-    color_ramp.color_ramp.elements.clear()
+    # Limpa elementos do color ramp corretamente
+    while len(color_ramp.color_ramp.elements) > 0:
+        color_ramp.color_ramp.elements.remove(color_ramp.color_ramp.elements[0])
+
+    # Adiciona elementos como no CSS
     color_ramp.color_ramp.elements.new(0.0)
     color_ramp.color_ramp.elements.new(0.25)
     color_ramp.color_ramp.elements.new(0.5)
@@ -58,18 +60,18 @@ def create_footer():
     links.new(diffuse.outputs['BSDF'], mix.inputs[2])
     links.new(mix.outputs['Shader'], output.inputs['Surface'])
 
-    # Atribui material
+    # Atribui material ao plano
     rodape.data.materials.append(mat)
     mat.blend_method = 'BLEND'
     mat.shadow_method = 'NONE'
 
-    # Câmera ajustada
+    # Adiciona câmera
     cam = bpy.data.cameras.new("Camera")
     cam_obj = bpy.data.objects.new("Camera", cam)
     bpy.context.collection.objects.link(cam_obj)
     bpy.context.scene.camera = cam_obj
     cam_obj.location = (0, -9.5, 1)
-    cam_obj.rotation_euler = (1.5708, 0, 0)  # de cima pra baixo
+    cam_obj.rotation_euler = (1.5708, 0, 0)  # de cima para baixo
 
 def configure_render():
     scene = bpy.context.scene
