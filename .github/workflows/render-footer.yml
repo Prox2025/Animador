@@ -1,9 +1,7 @@
 name: Renderizar Rodapé Transparente
 
 on:
-  push:
-    paths:
-      - rodape_imagem_transparente.py
+  workflow_dispatch:
 
 jobs:
   render:
@@ -13,17 +11,17 @@ jobs:
       - name: Clonar repositório
         uses: actions/checkout@v4
 
-      - name: Instalar Blender e Xvfb
+      - name: Instalar Blender e xvfb
         run: |
           sudo apt update
           sudo apt install -y blender xvfb
 
-      - name: Executar Blender com Xvfb
+      - name: Executar Blender com xvfb
         run: |
           xvfb-run --auto-servernum -- blender --background --factory-startup --python rodape_imagem_transparente.py
 
       - name: Fazer upload da imagem gerada
         uses: actions/upload-artifact@v4
         with:
-          name: rodape-transparente
+          name: rodape-imagem-transparente
           path: rodape_transparente.png
