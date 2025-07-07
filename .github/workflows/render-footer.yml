@@ -1,6 +1,9 @@
-name: Render Rodapé Animado
+name: Gerar Rodapé Transparente PNG
 
 on:
+  push:
+    paths:
+      - rodape_imagem_transparente.py
   workflow_dispatch:
 
 jobs:
@@ -8,20 +11,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v3
+    - name: 📥 Clonar repositório
+      uses: actions/checkout@v4
 
-      - name: Instalar Blender
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y blender
+    - name: 🧪 Instalar Blender
+      uses: jeffrafter/blender-action@v1
+      with:
+        version: 4.0.2
 
-      - name: Rodar Blender com o script
-        run: |
-          blender --background --factory-startup --python rodape_animado.py
+    - name: 🎬 Executar Blender e gerar imagem
+      run: |
+        blender --background --factory-startup --python rodape_imagem_transparente.py
 
-      - name: Upload do vídeo como artefato
-        uses: actions/upload-artifact@v4
-        with:
-          name: rodape-animado
-          path: rodape_animado.webm
+    - name: ⬆️ Enviar imagem gerada
+      uses: actions/upload-artifact@v4
+      with:
+        name: rodape-transparente
+        path: rodape_transparente.png
