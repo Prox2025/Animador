@@ -33,20 +33,27 @@ def create_footer():
     mapping.vector_type = 'POINT'
     mapping.inputs['Rotation'].default_value[0] = 1.5708  # 90° em X
 
-    # Limpa todos os elementos do color ramp
+    # Limpar color ramp sem erro
     elements = color_ramp.color_ramp.elements
-    while len(elements) > 0:
-        elements.remove(elements[0])
 
+    # Resetar primeiro elemento (sempre existe)
     points = [
-        (0.0, 1.0),   # rgba(0,0,0,1)
-        (0.25, 0.7),  # rgba(0,0,0,0.7)
-        (0.5, 0.4),   # rgba(0,0,0,0.4)
-        (0.85, 0.1),  # rgba(0,0,0,0.1)
-        (1.0, 0.0),   # rgba(0,0,0,0)
+        (0.0, 1.0),   # opacidade 1
+        (0.25, 0.7),
+        (0.5, 0.4),
+        (0.85, 0.1),
+        (1.0, 0.0),
     ]
 
-    for pos, alpha in points:
+    elements[0].position = points[0][0]
+    elements[0].color = (0, 0, 0, points[0][1])
+
+    # Remove os demais elementos (se houver)
+    for i in range(len(elements) - 1, 0, -1):
+        elements.remove(elements[i])
+
+    # Adiciona os outros pontos do gradiente
+    for pos, alpha in points[1:]:
         elem = elements.new(pos)
         elem.color = (0, 0, 0, alpha)
 
@@ -71,7 +78,7 @@ def create_footer():
     rodape.keyframe_insert(data_path="location", frame=180)   # 60%
     rodape.keyframe_insert(data_path="location", frame=300)   # 100%
 
-    # Interpolação linear
+    # Interpolação linear para suavizar movimento
     for fcurve in rodape.animation_data.action.fcurves:
         for kp in fcurve.keyframe_points:
             kp.interpolation = 'LINEAR'
@@ -96,7 +103,7 @@ def configure_render():
     scene.render.resolution_x = 1280
     scene.render.resolution_y = 720
 
-# Execução
+# Execução principal
 clear_scene()
 create_footer()
 configure_render()
