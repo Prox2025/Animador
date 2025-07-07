@@ -85,7 +85,8 @@ def create_camera():
 
 def configure_render():
     scene = bpy.context.scene
-    scene.render.engine = 'BLENDER_EEVEE'
+    scene.render.engine = 'CYCLES'           # ← Usar Cycles
+    scene.cycles.device = 'CPU'              # ← Forçar CPU
     scene.render.film_transparent = True
 
     output_path = os.path.join(os.getcwd(), "rodape_animado.webm")
@@ -98,11 +99,12 @@ def configure_render():
     scene.render.ffmpeg.video_bitrate = 1000
     scene.render.image_settings.color_mode = 'RGBA'
     scene.frame_start = 1
-    scene.frame_end = 300
+    scene.frame_end = 300  # 10 segundos a 30fps
     scene.render.fps = 30
     scene.render.resolution_x = 1280
     scene.render.resolution_y = 720
 
+# Execução
 clear_scene()
 create_footer()
 create_camera()
