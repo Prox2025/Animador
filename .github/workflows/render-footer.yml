@@ -14,10 +14,10 @@ jobs:
     - name: 📥 Clonar repositório
       uses: actions/checkout@v4
 
-    - name: 🧪 Instalar Blender
-      uses: jeffrafter/blender-action@v1
-      with:
-        version: 4.0.2
+    - name: 🔧 Instalar Blender
+      run: |
+        sudo apt update
+        sudo apt install -y blender
 
     - name: 🎬 Executar Blender e gerar imagem
       run: |
