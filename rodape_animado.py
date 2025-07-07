@@ -36,7 +36,6 @@ def create_footer():
     # Limpar color ramp sem erro
     elements = color_ramp.color_ramp.elements
 
-    # Resetar primeiro elemento (sempre existe)
     points = [
         (0.0, 1.0),   # opacidade 1
         (0.25, 0.7),
@@ -45,6 +44,7 @@ def create_footer():
         (1.0, 0.0),
     ]
 
+    # Resetar primeiro elemento (sempre existe)
     elements[0].position = points[0][0]
     elements[0].color = (0, 0, 0, points[0][1])
 
@@ -93,7 +93,7 @@ def configure_render():
 
     scene.render.image_settings.file_format = 'FFMPEG'
     scene.render.ffmpeg.format = 'WEBM'
-    scene.render.ffmpeg.codec = 'WEBM_VP9'
+    scene.render.ffmpeg.codec = 'WEBM'  # Ajustado para codec válido
     scene.render.ffmpeg.constant_rate_factor = 'HIGH'
     scene.render.ffmpeg.video_bitrate = 1000
     scene.render.image_settings.color_mode = 'RGBA'
