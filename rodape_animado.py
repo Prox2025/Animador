@@ -64,19 +64,6 @@ def create_footer():
 
     rodape.data.materials.append(mat)
 
-    rodape.location.y = -12
-    rodape.keyframe_insert(data_path="location", frame=1)
-    rodape.location.y = -9.5
-    rodape.keyframe_insert(data_path="location", frame=30)
-    rodape.keyframe_insert(data_path="location", frame=150)
-    rodape.location.y = -12
-    rodape.keyframe_insert(data_path="location", frame=180)
-    rodape.keyframe_insert(data_path="location", frame=300)
-
-    for fcurve in rodape.animation_data.action.fcurves:
-        for kp in fcurve.keyframe_points:
-            kp.interpolation = 'LINEAR'
-
 def create_camera():
     bpy.ops.object.camera_add(location=(0, 0, 10))
     cam = bpy.context.active_object
@@ -87,27 +74,24 @@ def configure_render():
     scene = bpy.context.scene
     scene.render.engine = 'CYCLES'
     scene.cycles.device = 'CPU'
-    scene.cycles.use_denoising = False  # ← ESSENCIAL para evitar erro em CI
+    scene.cycles.use_denoising = False
     scene.render.film_transparent = True
 
-    output_path = os.path.join(os.getcwd(), "rodape_animado.webm")
+    output_path = os.path.join(os.getcwd(), "rodape_transparente.png")
     scene.render.filepath = output_path
 
-    scene.render.image_settings.file_format = 'FFMPEG'
-    scene.render.ffmpeg.format = 'WEBM'
-    scene.render.ffmpeg.codec = 'WEBM'
-    scene.render.ffmpeg.constant_rate_factor = 'HIGH'
-    scene.render.ffmpeg.video_bitrate = 1000
+    scene.render.image_settings.file_format = 'PNG'
     scene.render.image_settings.color_mode = 'RGBA'
-    scene.frame_start = 1
-    scene.frame_end = 300  # 10 segundos a 30 fps
-    scene.render.fps = 30
     scene.render.resolution_x = 1280
     scene.render.resolution_y = 720
+    scene.render.film_transparent = True
 
-# Execução principal
-clear_scene()
-create_footer()
-create_camera()
-configure_render()
-bpy.ops.render.render(animation=True)
+def main():
+    clear_scene()
+    create_footer()
+    create_camera()
+    configure_render()
+    bpy.ops.render.render(write_still=True)
+
+if __name__ == "__main__":
+    main()
