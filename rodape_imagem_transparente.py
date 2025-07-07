@@ -28,28 +28,23 @@ def create_footer():
     texcoord = nodes.new('ShaderNodeTexCoord')
     color_ramp = nodes.new('ShaderNodeValToRGB')
 
-    # Configurar rotação do gradiente
+    # Configura rotação do gradiente
     mapping.vector_type = 'POINT'
     mapping.inputs['Rotation'].default_value[2] = 1.5708  # 90 graus
 
-    # Limpa elementos do color ramp corretamente
-    while len(color_ramp.color_ramp.elements) > 0:
+    # Remove todos os elementos exceto 1 (obrigatório)
+    while len(color_ramp.color_ramp.elements) > 1:
         color_ramp.color_ramp.elements.remove(color_ramp.color_ramp.elements[0])
 
-    # Adiciona elementos como no CSS
-    color_ramp.color_ramp.elements.new(0.0)
-    color_ramp.color_ramp.elements.new(0.25)
-    color_ramp.color_ramp.elements.new(0.5)
-    color_ramp.color_ramp.elements.new(0.85)
-    color_ramp.color_ramp.elements.new(1.0)
+    # Atualiza os elementos
+    ramp = color_ramp.color_ramp
+    ramp.elements[0].position = 0.0
+    ramp.elements[0].color = (0, 0, 0, 1)
 
-    elems = color_ramp.color_ramp.elements
-    elems[0].position = 0.0
-    elems[0].color = (0, 0, 0, 1)
-    elems[1].color = (0, 0, 0, 0.7)
-    elems[2].color = (0, 0, 0, 0.4)
-    elems[3].color = (0, 0, 0, 0.1)
-    elems[4].color = (0, 0, 0, 0.0)
+    ramp.elements.new(0.25).color = (0, 0, 0, 0.7)
+    ramp.elements.new(0.5).color = (0, 0, 0, 0.4)
+    ramp.elements.new(0.85).color = (0, 0, 0, 0.1)
+    ramp.elements.new(1.0).color = (0, 0, 0, 0)
 
     # Ligações
     links.new(texcoord.outputs['Object'], mapping.inputs['Vector'])
@@ -60,7 +55,7 @@ def create_footer():
     links.new(diffuse.outputs['BSDF'], mix.inputs[2])
     links.new(mix.outputs['Shader'], output.inputs['Surface'])
 
-    # Atribui material ao plano
+    # Atribui material
     rodape.data.materials.append(mat)
     mat.blend_method = 'BLEND'
     mat.shadow_method = 'NONE'
@@ -71,7 +66,7 @@ def create_footer():
     bpy.context.collection.objects.link(cam_obj)
     bpy.context.scene.camera = cam_obj
     cam_obj.location = (0, -9.5, 1)
-    cam_obj.rotation_euler = (1.5708, 0, 0)  # de cima para baixo
+    cam_obj.rotation_euler = (1.5708, 0, 0)
 
 def configure_render():
     scene = bpy.context.scene
@@ -86,6 +81,7 @@ def configure_render():
     scene.render.resolution_x = 1280
     scene.render.resolution_y = 200
 
+# Executa tudo
 clear_scene()
 create_footer()
 configure_render()
