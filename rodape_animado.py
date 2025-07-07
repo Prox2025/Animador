@@ -85,8 +85,9 @@ def create_camera():
 
 def configure_render():
     scene = bpy.context.scene
-    scene.render.engine = 'CYCLES'           # ← Usar Cycles
-    scene.cycles.device = 'CPU'              # ← Forçar CPU
+    scene.render.engine = 'CYCLES'
+    scene.cycles.device = 'CPU'
+    scene.cycles.use_denoising = False  # ← ESSENCIAL para evitar erro em CI
     scene.render.film_transparent = True
 
     output_path = os.path.join(os.getcwd(), "rodape_animado.webm")
@@ -99,12 +100,12 @@ def configure_render():
     scene.render.ffmpeg.video_bitrate = 1000
     scene.render.image_settings.color_mode = 'RGBA'
     scene.frame_start = 1
-    scene.frame_end = 300  # 10 segundos a 30fps
+    scene.frame_end = 300  # 10 segundos a 30 fps
     scene.render.fps = 30
     scene.render.resolution_x = 1280
     scene.render.resolution_y = 720
 
-# Execução
+# Execução principal
 clear_scene()
 create_footer()
 create_camera()
