@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 
-const SERVER_URL = 'https://livestream.ct.ws/Api/video.php'; // Corrija a URL se necessário
+const SERVER_URL = 'https://livestream.ct.ws/Api/vídeo.php'; // Corrija a URL se necessário
 const OUTPUT_PATH = path.join(__dirname, 'videos', 'entrada.mp4');
 
 (async () => {
