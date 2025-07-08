@@ -29,13 +29,13 @@ jobs:
         run: python3 remover_fundo.py
 
       - name: Upload do MP4 com alpha
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: video-alpha-prores-mp4
           path: saida/video_sem_fundo.mp4
 
       - name: Upload do WebM com alpha
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: video-alpha-webm
           path: saida/video_sem_fundo.webm
