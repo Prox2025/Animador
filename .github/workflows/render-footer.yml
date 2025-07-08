@@ -1,44 +1,59 @@
-name: Remover Fundo do Vídeo
+name: Remover Fundo com RobustVideoMatting
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ "main" ]
 
 jobs:
-  remover-fundo:
+  processar-video:
     runs-on: ubuntu-latest
 
     steps:
-    - name: ⬇️ Clonar repositório
-      uses: actions/checkout@v4
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
 
-    - name: 🔧 Configurar Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Configurar Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
 
-    - name: 📦 Instalar Puppeteer
-      run: npm install puppeteer
+      - name: Instalar Puppeteer
+        run: npm install puppeteer
 
-    - name: 🧠 Executar Puppeteer para baixar vídeo
-      run: node baixar_com_puppeteer.js
+      - name: Baixar vídeo com Puppeteer
+        run: |
+          mkdir -p videos
+          node baixar_video.js
 
-    - name: 🐍 Configurar Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Instalar dependências do sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3 python3-pip
 
-    - name: 🧪 Instalar dependências Python
-      run: |
-        python -m pip install --upgrade pip
-        pip install numpy pillow
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
 
-    - name: 🎬 Remover fundo com Python
-      run: python3 remover_fundo.py
+      - name: Instalar RobustVideoMatting e dependências
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision robust-video-matting
 
-    - name: 📤 Upload do vídeo sem fundo
-      uses: actions/upload-artifact@v4
-      with:
-        name: video-sem-fundo
-        path: saida/
+      - name: Baixar checkpoint RVM (resnet50)
+        run: |
+          wget -O rvm_resnet50.pth https://github.com/antonbs/robust-video-matting/releases/download/v1.0/rvm_resnet50.pth
+
+      - name: Remover fundo e gerar WebM com transparência
+        run: |
+          python -m robust_video_matting.evaluate \
+            --checkpoint rvm_resnet50.pth \
+            --input-source videos/entrada.mp4 \
+            --output-type video \
+            --output-composition videos/video_sem_fundo.webm \
+            --device cpu
+
+      - name: Publicar vídeo processado
+        uses: actions/upload-artifact@v3
+        with:
+          name: video-sem-fundo
+          path: videos/video_sem_fundo.webm
