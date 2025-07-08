@@ -1,44 +1,47 @@
-name: Processar Vídeo com Transparência
+name: Remover Fundo do Vídeo
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  video_pipeline:
+  processar_video:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📁 Checkout do repositório
-        uses: actions/checkout@v3
+    - name: Checkout do código
+      uses: actions/checkout@v4
 
-      - name: 🧱 Instalar Node.js e Puppeteer
-        run: |
-          sudo apt update
-          sudo apt install -y nodejs npm
-          npm install puppeteer
+    - name: Instalar Python e dependências
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
 
-      - name: 🧪 Instalar Python, FFmpeg e Pillow
-        run: |
-          sudo apt install -y ffmpeg python3-pip
-          pip install numpy pillow
+    - name: Instalar Pillow e outras libs Python
+      run: |
+        python -m pip install --upgrade pip
+        pip install Pillow
 
-      - name: 🌐 Baixar vídeo com Puppeteer + https.get
-        run: node baixar_com_puppeteer.js
+    - name: Criar pastas necessárias
+      run: |
+        mkdir -p videos
+        mkdir -p saida
 
-      - name: 🔍 Verificar vídeo baixado
-        run: ls -lh videos/entrada.mp4
+    - name: Baixar vídeo (exemplo, ajuste conforme seu caso)
+      run: |
+        # Suponha que já tenha o vídeo em videos/entrada.mp4
+        echo "Vídeo deve estar em videos/entrada.mp4 para o script funcionar"
 
-      - name: 🎨 Remover fundo e gerar vídeos transparentes
-        run: python3 remover_fundo.py
+    - name: Rodar script Python para remover fundo
+      run: python remover_fundo.py
 
-      - name: 📤 Upload do MP4 com alpha (ProRes 4444)
-        uses: actions/upload-artifact@v4
-        with:
-          name: video-alpha-prores-mp4
-          path: saida/video_sem_fundo.mp4
+    - name: Listar saída
+      run: ls -lh saida/
 
-      - name: 📤 Upload do WebM com alpha
-        uses: actions/upload-artifact@v4
-        with:
-          name: video-alpha-webm
-          path: saida/video_sem_fundo.webm
+    - name: Upload do vídeo final (artefato)
+      uses: actions/upload-artifact@v3
+      with:
+        name: video_sem_fundo
+        path: saida/video_sem_fundo.webm
