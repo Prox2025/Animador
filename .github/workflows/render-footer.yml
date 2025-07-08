@@ -11,7 +11,7 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v3
 
-      - name: Instalar Node.js + Puppeteer
+      - name: Instalar Node.js e Puppeteer
         run: |
           sudo apt update
           sudo apt install -y nodejs npm
@@ -22,7 +22,7 @@ jobs:
           sudo apt install -y ffmpeg python3-opencv python3-pip
           pip install numpy
 
-      - name: Baixar vídeo do servidor com Puppeteer
+      - name: Baixar vídeo com Puppeteer e https.get
         run: node baixar_com_puppeteer.js
 
       - name: Remover fundo e gerar vídeos com transparência
