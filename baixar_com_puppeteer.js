@@ -1,6 +1,6 @@
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
+const puppeteer = require('puppeteer');
 
 const SERVER_URL = 'https://livestream.ct.ws/Api/vídeo.php';
 const OUTPUT_PATH = path.join(__dirname, 'videos', 'entrada.mp4');
@@ -15,46 +15,29 @@ const OUTPUT_PATH = path.join(__dirname, 'videos', 'entrada.mp4');
   const page = await browser.newPage();
   await page.setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/91.0.4472.114 Safari/537.36");
 
-  console.log('🎯 Interceptando resposta com vídeo...');
-  let videoCaptured = false;
-
-  page.on('response', async (response) => {
-    const url = response.url();
-    const headers = response.headers();
-
-    if (headers['content-type'] && headers['content-type'].includes('video/mp4') && !videoCaptured) {
-      videoCaptured = true;
-
-      console.log(`📡 Capturado vídeo da URL: ${url}`);
-      console.log(`📁 Tipo de conteúdo: ${headers['content-type']}`);
-
-      try {
-        const buffer = await response.buffer();
-        fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-        fs.writeFileSync(OUTPUT_PATH, buffer);
-        console.log(`✅ Vídeo salvo em: ${OUTPUT_PATH}`);
-        await browser.close();
-        process.exit(0);
-      } catch (err) {
-        console.error('❌ Erro ao capturar binário:', err);
-        await browser.close();
-        process.exit(1);
-      }
-    }
-  });
-
-  console.log('🌐 Acessando o servidor...');
+  console.log('🌐 Acessando a API para buscar os dados binários do vídeo...');
   await page.goto(SERVER_URL, {
-    waitUntil: 'domcontentloaded',
+    waitUntil: 'networkidle0',
     timeout: 60000
   });
 
-  // Se o vídeo não for capturado em até 15s, encerramos
-  setTimeout(async () => {
-    if (!videoCaptured) {
-      console.error('❌ Vídeo não foi detectado na resposta.');
-      await browser.close();
-      process.exit(1);
-    }
-  }, 15000);
+  const jsonContent = await page.evaluate(() => {
+    return JSON.parse(document.body.innerText);
+  });
+
+  if (!jsonContent.dados_base64) {
+    console.error('❌ Nenhum dado base64 encontrado no JSON.');
+    await browser.close();
+    process.exit(1);
+  }
+
+  const buffer = Buffer.from(jsonContent.dados_base64, 'base64');
+
+  // Cria a pasta de destino se necessário
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+
+  fs.writeFileSync(OUTPUT_PATH, buffer);
+  console.log(`✅ Vídeo salvo em: ${OUTPUT_PATH}`);
+
+  await browser.close();
 })();
