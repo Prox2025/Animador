@@ -1,27 +1,41 @@
-name: Renderizar Rodapé Transparente
+name: Processar Vídeo com Transparência
 
 on:
   workflow_dispatch:
 
 jobs:
-  render:
+  video_pipeline:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar repositório
-        uses: actions/checkout@v4
+      - name: Checkout do repositório
+        uses: actions/checkout@v3
 
-      - name: Instalar Blender e xvfb
+      - name: Instalar Node.js + Puppeteer
         run: |
           sudo apt update
-          sudo apt install -y blender xvfb
+          sudo apt install -y nodejs npm
+          npm install puppeteer
 
-      - name: Executar Blender com xvfb
+      - name: Instalar Python, FFmpeg e dependências
         run: |
-          xvfb-run --auto-servernum -- blender --background --factory-startup --python rodape_imagem_transparente.py
+          sudo apt install -y ffmpeg python3-opencv python3-pip
+          pip install numpy
 
-      - name: Fazer upload da imagem gerada
-        uses: actions/upload-artifact@v4
+      - name: Baixar vídeo do servidor com Puppeteer
+        run: node baixar_com_puppeteer.js
+
+      - name: Remover fundo e gerar vídeos com transparência
+        run: python3 remover_fundo.py
+
+      - name: Upload do MP4 com alpha
+        uses: actions/upload-artifact@v3
         with:
-          name: rodape-imagem-transparente
-          path: rodape_transparente.png
+          name: video-alpha-prores-mp4
+          path: saida/video_sem_fundo.mp4
+
+      - name: Upload do WebM com alpha
+        uses: actions/upload-artifact@v3
+        with:
+          name: video-alpha-webm
+          path: saida/video_sem_fundo.webm
