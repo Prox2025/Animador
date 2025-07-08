@@ -1,14 +1,12 @@
-import cv2
-import numpy as np
 import subprocess
 from collections import Counter
+from PIL import Image
 import os
 
 entrada_video = "videos/entrada.mp4"
 frame_saida = "saida/frame.png"
 saida_video = "saida/video_sem_fundo.webm"
 
-# Garante que as pastas existam
 os.makedirs("saida", exist_ok=True)
 
 def extrair_primeiro_frame():
@@ -22,14 +20,9 @@ def extrair_primeiro_frame():
 
 def detectar_cor_dominante():
     print("🎯 Detectando cor dominante na imagem...")
-    imagem = cv2.imread(frame_saida)
-    if imagem is None:
-        raise Exception("Erro ao ler frame extraído.")
-
-    imagem_rgb = cv2.cvtColor(imagem, cv2.COLOR_BGR2RGB)
-    pixels = imagem_rgb.reshape(-1, 3)
-    pixels_tuple = [tuple(p) for p in pixels]
-    cor_mais_comum = Counter(pixels_tuple).most_common(1)[0][0]
+    imagem = Image.open(frame_saida).convert('RGB')
+    pixels = list(imagem.getdata())
+    cor_mais_comum = Counter(pixels).most_common(1)[0][0]
     cor_hex = '%02X%02X%02X' % cor_mais_comum
     print(f"🧠 Cor dominante detectada: 0x{cor_hex}")
     return f"0x{cor_hex}"
