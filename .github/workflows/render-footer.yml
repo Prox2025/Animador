@@ -19,7 +19,7 @@ jobs:
       with:
         python-version: '3.x'
 
-    - name: Instalar Pillow
+    - name: Instalar dependências Python
       run: |
         python -m pip install --upgrade pip
         pip install Pillow
@@ -34,17 +34,27 @@ jobs:
         mkdir -p videos
         mkdir -p saida
 
-    - name: Baixar vídeo (ajuste conforme necessário)
+    - name: (Opcional) Baixar vídeo automaticamente
       run: |
-        echo "Você precisa colocar o vídeo em videos/entrada.mp4 antes de rodar"
+        echo "🔁 Substitua este passo pelo Puppeteer ou outro método de download."
 
-    - name: Rodar script Python
+    - name: Verificar se o vídeo foi baixado corretamente
+      run: |
+        if [ ! -f videos/entrada.mp4 ]; then
+          echo "❌ O arquivo videos/entrada.mp4 não foi encontrado!"
+          exit 1
+        fi
+
+    - name: Listar arquivos disponíveis
+      run: ls -lh videos/
+
+    - name: Executar script Python para remover fundo
       run: python remover_fundo.py
 
-    - name: Verificar saída
+    - name: Verificar arquivos de saída
       run: ls -lh saida/
 
-    - name: Upload do artefato
+    - name: Upload do vídeo com fundo removido
       uses: actions/upload-artifact@v4
       with:
         name: video_sem_fundo
