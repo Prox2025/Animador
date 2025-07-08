@@ -8,33 +8,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do repositório
+      - name: 📁 Checkout do repositório
         uses: actions/checkout@v3
 
-      - name: Instalar Node.js e Puppeteer
+      - name: 🧱 Instalar Node.js e Puppeteer
         run: |
           sudo apt update
           sudo apt install -y nodejs npm
           npm install puppeteer
 
-      - name: Instalar Python, FFmpeg e dependências
+      - name: 🧪 Instalar Python, FFmpeg e Pillow
         run: |
-          sudo apt install -y ffmpeg python3-opencv python3-pip
-          pip install numpy
+          sudo apt install -y ffmpeg python3-pip
+          pip install numpy pillow
 
-      - name: Baixar vídeo com Puppeteer e https.get
+      - name: 🌐 Baixar vídeo com Puppeteer + https.get
         run: node baixar_com_puppeteer.js
 
-      - name: Remover fundo e gerar vídeos com transparência
+      - name: 🔍 Verificar vídeo baixado
+        run: ls -lh videos/entrada.mp4
+
+      - name: 🎨 Remover fundo e gerar vídeos transparentes
         run: python3 remover_fundo.py
 
-      - name: Upload do MP4 com alpha
+      - name: 📤 Upload do MP4 com alpha (ProRes 4444)
         uses: actions/upload-artifact@v4
         with:
           name: video-alpha-prores-mp4
           path: saida/video_sem_fundo.mp4
 
-      - name: Upload do WebM com alpha
+      - name: 📤 Upload do WebM com alpha
         uses: actions/upload-artifact@v4
         with:
           name: video-alpha-webm
