@@ -14,32 +14,37 @@ jobs:
     - name: Checkout do código
       uses: actions/checkout@v4
 
-    - name: Instalar Python e dependências
+    - name: Instalar Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
 
-    - name: Instalar Pillow e outras libs Python
+    - name: Instalar Pillow
       run: |
         python -m pip install --upgrade pip
         pip install Pillow
+
+    - name: Instalar FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
 
     - name: Criar pastas necessárias
       run: |
         mkdir -p videos
         mkdir -p saida
 
-    - name: Baixar vídeo (ajuste conforme seu caso)
+    - name: Baixar vídeo (ajuste conforme necessário)
       run: |
-        echo "Coloque o vídeo em videos/entrada.mp4 para o script funcionar"
+        echo "Você precisa colocar o vídeo em videos/entrada.mp4 antes de rodar"
 
-    - name: Rodar script Python para remover fundo
+    - name: Rodar script Python
       run: python remover_fundo.py
 
-    - name: Listar saída
+    - name: Verificar saída
       run: ls -lh saida/
 
-    - name: Upload do vídeo final (artefato)
+    - name: Upload do artefato
       uses: actions/upload-artifact@v4
       with:
         name: video_sem_fundo
