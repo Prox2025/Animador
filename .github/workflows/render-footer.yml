@@ -29,10 +29,9 @@ jobs:
         mkdir -p videos
         mkdir -p saida
 
-    - name: Baixar vídeo (exemplo, ajuste conforme seu caso)
+    - name: Baixar vídeo (ajuste conforme seu caso)
       run: |
-        # Suponha que já tenha o vídeo em videos/entrada.mp4
-        echo "Vídeo deve estar em videos/entrada.mp4 para o script funcionar"
+        echo "Coloque o vídeo em videos/entrada.mp4 para o script funcionar"
 
     - name: Rodar script Python para remover fundo
       run: python remover_fundo.py
@@ -41,7 +40,7 @@ jobs:
       run: ls -lh saida/
 
     - name: Upload do vídeo final (artefato)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: video_sem_fundo
         path: saida/video_sem_fundo.webm
