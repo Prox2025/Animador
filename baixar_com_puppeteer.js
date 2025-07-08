@@ -12,41 +12,49 @@ const OUTPUT_PATH = path.join(__dirname, 'videos', 'entrada.mp4');
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/91.0.4472.114 Safari/537.36");
+  const page = await browser.newPage();
+  await page.setUserAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/91.0.4472.114 Safari/537.36");
 
-    console.log('🌐 Acessando o servidor...');
-    const response = await page.goto(SERVER_URL, {
-      waitUntil: 'networkidle2',
-      timeout: 60000
-    });
+  console.log('🎯 Interceptando resposta com vídeo...');
+  let videoCaptured = false;
 
-    const status = response.status();
-    const contentType = response.headers()['content-type'];
+  page.on('response', async (response) => {
+    const url = response.url();
+    const headers = response.headers();
 
-    console.log(`📡 Status HTTP: ${status}`);
-    console.log(`📁 Tipo de conteúdo: ${contentType}`);
+    if (headers['content-type'] && headers['content-type'].includes('video/mp4') && !videoCaptured) {
+      videoCaptured = true;
 
-    if (status !== 200 || !contentType.includes('video')) {
-      console.error(`❌ Conteúdo inválido ou não é vídeo: ${contentType}`);
-      const html = await page.content();
-      console.error('🧾 HTML retornado (parcial):\n', html.slice(0, 500));
+      console.log(`📡 Capturado vídeo da URL: ${url}`);
+      console.log(`📁 Tipo de conteúdo: ${headers['content-type']}`);
+
+      try {
+        const buffer = await response.buffer();
+        fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+        fs.writeFileSync(OUTPUT_PATH, buffer);
+        console.log(`✅ Vídeo salvo em: ${OUTPUT_PATH}`);
+        await browser.close();
+        process.exit(0);
+      } catch (err) {
+        console.error('❌ Erro ao capturar binário:', err);
+        await browser.close();
+        process.exit(1);
+      }
+    }
+  });
+
+  console.log('🌐 Acessando o servidor...');
+  await page.goto(SERVER_URL, {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000
+  });
+
+  // Se o vídeo não for capturado em até 15s, encerramos
+  setTimeout(async () => {
+    if (!videoCaptured) {
+      console.error('❌ Vídeo não foi detectado na resposta.');
       await browser.close();
       process.exit(1);
     }
-
-    console.log('📥 Recebendo vídeo binário...');
-    const buffer = await response.buffer();
-
-    fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-    fs.writeFileSync(OUTPUT_PATH, buffer);
-    console.log(`✅ Vídeo salvo em: ${OUTPUT_PATH}`);
-
-    await browser.close();
-  } catch (err) {
-    console.error('❌ Erro no Puppeteer:', err);
-    await browser.close();
-    process.exit(1);
-  }
+  }, 15000);
 })();
