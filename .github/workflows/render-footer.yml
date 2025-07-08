@@ -1,60 +1,38 @@
-name: Remover Fundo com RobustVideoMatting
+name: Remover fundo do vídeo automático
 
 on:
   workflow_dispatch:
 
 jobs:
-  processar-video:
+  download_and_remove_background:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout do repositório
-        uses: actions/checkout@v3
+    - name: 📥 Clonar repositório
+      uses: actions/checkout@v4
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
+    - name: 🔧 Configurar Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
 
-      - name: Instalar Puppeteer
-        run: npm install puppeteer
+    - name: 🚀 Instalar dependências Node.js
+      run: npm install puppeteer
 
-      - name: Baixar vídeo com Puppeteer
-        run: |
-          mkdir -p videos
-          node baixar_video.js
+    - name: 🛠️ Instalar FFmpeg e Python OpenCV
+      run: |
+        sudo apt update
+        sudo apt install -y ffmpeg python3 python3-pip
+        pip3 install opencv-python numpy
 
-      - name: Instalar dependências do sistema
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg python3 python3-pip
+    - name: 📥 Baixar vídeo via Puppeteer
+      run: node baixar_video.js
 
-      - name: Configurar Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
+    - name: 🐍 Remover fundo do vídeo (Python)
+      run: python3 remover_fundo.py
 
-      - name: Instalar Torch e RobustVideoMatting
-        run: |
-          python -m pip install --upgrade pip
-          pip install torch torchvision
-          pip install git+https://github.com/PeterL1n/RobustVideoMatting.git
-
-      - name: Baixar modelo RVM (resnet50)
-        run: |
-          wget -O rvm_resnet50.pth https://github.com/antonbs/robust-video-matting/releases/download/v1.0/rvm_resnet50.pth
-
-      - name: Executar RVM e gerar vídeo .webm com fundo transparente
-        run: |
-          python -m robust_video_matting.evaluate \
-            --checkpoint rvm_resnet50.pth \
-            --input-source videos/entrada.mp4 \
-            --output-type video \
-            --output-composition videos/video_sem_fundo.webm \
-            --device cpu
-
-      - name: Upload do vídeo com fundo transparente (.webm)
-        uses: actions/upload-artifact@v4
-        with:
-          name: video-sem-fundo
-          path: videos/video_sem_fundo.webm
+    - name: 📤 Publicar artefato (vídeo final)
+      uses: actions/upload-artifact@v4
+      with:
+        name: video_fundo_removido
+        path: videos/video_fundo_removido.webm
