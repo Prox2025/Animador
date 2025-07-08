@@ -52,8 +52,8 @@ jobs:
             --output-composition videos/video_sem_fundo.webm \
             --device cpu
 
-      - name: Publicar vídeo processado
-        uses: actions/upload-artifact@v3
+      - name: Upload do vídeo com fundo transparente (.webm)
+        uses: actions/upload-artifact@v4
         with:
           name: video-sem-fundo
           path: videos/video_sem_fundo.webm
