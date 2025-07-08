@@ -23,9 +23,14 @@ def detect_background_color(video_path, sample_frames=5):
         left = frame[:, 0:10, :]
         right = frame[:, -10:, :]
         
-        edges = np.concatenate((top, bottom, left, right), axis=0)
+        # Média da cor em cada borda (BGR)
+        mean_top = top.mean(axis=(0,1))
+        mean_bottom = bottom.mean(axis=(0,1))
+        mean_left = left.mean(axis=(0,1))
+        mean_right = right.mean(axis=(0,1))
         
-        mean_color = edges.mean(axis=(0,1))
+        # Média geral das bordas do frame
+        mean_color = (mean_top + mean_bottom + mean_left + mean_right) / 4
         colors.append(mean_color)
     
     cap.release()
