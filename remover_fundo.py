@@ -1,53 +1,54 @@
-import cv2
-import numpy as np
-from collections import Counter
 import subprocess
+from collections import Counter
+from PIL import Image
 import os
 
 ARQUIVO_VIDEO = "videos/entrada.mp4"
 PASTA_SAIDA = "saida"
+FRAME_PATH = os.path.join(PASTA_SAIDA, "frame.png")
 ARQUIVO_MP4 = os.path.join(PASTA_SAIDA, "video_sem_fundo.mp4")
 ARQUIVO_WEBM = os.path.join(PASTA_SAIDA, "video_sem_fundo.webm")
 
-def detectar_cor_dominante():
-    print("🎯 Detectando cor dominante...")
-    cap = cv2.VideoCapture(ARQUIVO_VIDEO)
-    ret, frame = cap.read()
-    cap.release()
-    if not ret:
-        raise Exception("Erro ao ler vídeo.")
+def extrair_primeiro_frame():
+    os.makedirs(PASTA_SAIDA, exist_ok=True)
+    print("🎞️ Extraindo primeiro frame com FFmpeg...")
+    subprocess.run([
+        "ffmpeg", "-y", "-i", ARQUIVO_VIDEO, "-vframes", "1", FRAME_PATH
+    ], check=True)
 
-    small = cv2.resize(frame, (100, 100))
-    pixels = small.reshape(-1, 3)
-    rounded = [tuple((p // 10) * 10) for p in pixels]
+def detectar_cor_dominante():
+    print("🎯 Detectando cor dominante na imagem...")
+    img = Image.open(FRAME_PATH).convert("RGB")
+    pixels = list(img.getdata())
+
+    # Arredonda cores para agrupar pixels semelhantes
+    rounded = [(p[0]//10*10, p[1]//10*10, p[2]//10*10) for p in pixels]
     cor = Counter(rounded).most_common(1)[0][0]
-    cor_hex = '0x%02X%02X%02X' % (cor[2], cor[1], cor[0])
-    print(f"🧠 Cor detectada: {cor_hex}")
+
+    cor_hex = '0x%02X%02X%02X' % (cor[0], cor[1], cor[2])
+    print(f"🧠 Cor dominante detectada: {cor_hex}")
     return cor_hex
 
 def remover_fundo(cor_hex):
-    os.makedirs(PASTA_SAIDA, exist_ok=True)
-
-    print("🛠️ Gerando MP4 com alpha (ProRes)...")
-    cmd_mp4 = [
+    print("🛠️ Gerando vídeo MP4 com alpha (ProRes)...")
+    subprocess.run([
         "ffmpeg", "-y", "-i", ARQUIVO_VIDEO,
         "-vf", f"chromakey={cor_hex}:0.1:0.0,format=yuva444p10le",
         "-c:v", "prores_ks", "-profile:v", "4",
         ARQUIVO_MP4
-    ]
-    subprocess.run(cmd_mp4, check=True)
+    ], check=True)
 
-    print("🛠️ Gerando WebM com alpha (libvpx)...")
-    cmd_webm = [
+    print("🛠️ Gerando vídeo WebM com alpha (libvpx)...")
+    subprocess.run([
         "ffmpeg", "-y", "-i", ARQUIVO_VIDEO,
         "-vf", f"chromakey={cor_hex}:0.1:0.0,format=yuva420p",
         "-c:v", "libvpx", "-auto-alt-ref", "0", "-b:v", "2M",
         ARQUIVO_WEBM
-    ]
-    subprocess.run(cmd_webm, check=True)
+    ], check=True)
 
     print(f"✅ Vídeos gerados:\n  - {ARQUIVO_MP4}\n  - {ARQUIVO_WEBM}")
 
 if __name__ == "__main__":
+    extrair_primeiro_frame()
     cor = detectar_cor_dominante()
     remover_fundo(cor)
