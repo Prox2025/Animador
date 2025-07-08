@@ -1,59 +1,67 @@
+import cv2
+import numpy as np
 import subprocess
-from PIL import Image
 import os
 
-VIDEO_INPUT = "videos/entrada.mp4"
-FRAME_OUTPUT = "saida/frame.png"
-VIDEO_OUTPUT = "saida/video_sem_fundo.webm"
+input_path = 'videos/entrada.mp4'
+output_path = 'videos/video_fundo_removido.webm'
 
-os.makedirs("saida", exist_ok=True)
+def detect_background_color(video_path, sample_frames=5):
+    cap = cv2.VideoCapture(video_path)
+    frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    step = max(1, frame_count // sample_frames)
+    
+    colors = []
+    for i in range(0, frame_count, step):
+        cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+        ret, frame = cap.read()
+        if not ret:
+            break
+        
+        top = frame[0:10, :, :]
+        bottom = frame[-10:, :, :]
+        left = frame[:, 0:10, :]
+        right = frame[:, -10:, :]
+        
+        edges = np.concatenate((top, bottom, left, right), axis=0)
+        
+        mean_color = edges.mean(axis=(0,1))
+        colors.append(mean_color)
+    
+    cap.release()
+    avg_color = np.mean(colors, axis=0)
+    return avg_color  # BGR
 
-def extrair_primeiro_frame():
-    print("🎞️ Extraindo primeiro frame com FFmpeg...")
+def bgr_to_hex(color_bgr):
+    r, g, b = int(color_bgr[2]), int(color_bgr[1]), int(color_bgr[0])
+    return f'0x{r:02X}{g:02X}{b:02X}'
+
+def remove_background_ffmpeg(input_video, output_video, color_hex, similarity=0.3, blend=0.2):
     cmd = [
-        "ffmpeg", "-y",
-        "-i", VIDEO_INPUT,
-        "-vframes", "1",
-        FRAME_OUTPUT
+        'ffmpeg',
+        '-i', input_video,
+        '-vf', f'colorkey={color_hex}:{similarity}:{blend},format=yuva420p',
+        '-c:v', 'libvpx-vp9',
+        '-auto-alt-ref', '0',
+        '-b:v', '1M',
+        '-pix_fmt', 'yuva420p',
+        output_video
     ]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stderr.decode())
-        raise Exception("Erro ao extrair o frame com FFmpeg.")
+    print("🔧 Executando FFmpeg para remover fundo:")
+    print(' '.join(cmd))
+    subprocess.run(cmd, check=True)
 
-def detectar_cor_dominante():
-    print("🎯 Detectando cor dominante com Pillow...")
-    imagem = Image.open(FRAME_OUTPUT).convert("RGB")
-    cores = imagem.getcolors(imagem.size[0] * imagem.size[1])
-    cor_mais_frequente = max(cores, key=lambda item: item[0])[1]
-    print(f"🧠 Cor dominante detectada: {cor_mais_frequente}")
-    return cor_mais_frequente
-
-def cor_rgb_para_hex(cor_rgb):
-    return f"0x{cor_rgb[0]:02X}{cor_rgb[1]:02X}{cor_rgb[2]:02X}"
-
-def remover_fundo(cor_rgb):
-    cor_hex = cor_rgb_para_hex(cor_rgb)
-    print("🛠️ Removendo fundo com FFmpeg...")
-    cmd = [
-        "ffmpeg", "-y",
-        "-i", VIDEO_INPUT,
-        "-vf", f"chromakey={cor_hex}:0.1:0.0,format=yuva420p",
-        "-c:v", "libvpx",  # WebM com alpha
-        "-auto-alt-ref", "0",
-        VIDEO_OUTPUT
-    ]
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if result.returncode != 0:
-        print(result.stderr.decode())
-        raise Exception("Erro ao remover o fundo com FFmpeg.")
-
-# Execução principal
-if not os.path.exists(VIDEO_INPUT):
-    raise FileNotFoundError("🚫 Vídeo de entrada não encontrado.")
-
-extrair_primeiro_frame()
-cor_dominante = detectar_cor_dominante()
-remover_fundo(cor_dominante)
-
-print("✅ Vídeo com fundo removido salvo em:", VIDEO_OUTPUT)
+if __name__ == "__main__":
+    if not os.path.exists(input_path):
+        print(f"Arquivo de entrada não encontrado: {input_path}")
+        exit(1)
+    
+    print("🎥 Detectando cor de fundo do vídeo...")
+    bg_color = detect_background_color(input_path)
+    print(f"Cor detectada (BGR): {bg_color}")
+    
+    color_hex = bgr_to_hex(bg_color)
+    print(f"Cor detectada para colorkey: {color_hex}")
+    
+    remove_background_ffmpeg(input_path, output_path, color_hex)
+    print(f"✅ Vídeo com fundo removido salvo em: {output_path}")
