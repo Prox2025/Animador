@@ -9,7 +9,7 @@ const { execSync } = require('child_process');
     const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
     const page = await browser.newPage();
 
-    const url = 'https://livestream.ct.ws/Google%20drive/informação.php';
+    const url = 'https://livestream.ct.ws/Google%20drive/informadados.php';
 
     await page.goto(url, { waitUntil: 'networkidle2' });
 
