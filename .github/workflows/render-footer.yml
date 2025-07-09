@@ -1,44 +1,34 @@
-name: Gravar Vídeo Animação
+name: Processar imagem para vídeo animado
 
 on:
   workflow_dispatch:
-    inputs:
-      url:
-        description: 'URL da página com animação (ex: http://localhost:8000/index.html)'
-        required: true
-      entrada:
-        description: 'Nome da animação de entrada (ex: fadeIn)'
-        required: true
-        default: 'fadeIn'
-      saida:
-        description: 'Nome da animação de saída (ex: fadeOut)'
-        required: true
-        default: 'fadeOut'
 
 jobs:
-  build:
+  processar-imagem:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checar código (opcional)
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Instalar Python e dependências
-        uses: actions/setup-python@v4
+      - name: Instalar Node.js e Puppeteer
+        uses: actions/setup-node@v3
         with:
-          python-version: 3.10
+          node-version: 18
 
-      - name: Instalar pyppeteer
+      - name: Instalar dependências e ffmpeg
         run: |
-          python -m pip install --upgrade pip
-          pip install pyppeteer
+          sudo apt-get update
+          sudo apt-get install -y libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libpangocairo-1.0-0 libxshmfence1 libdrm2 ffmpeg ffprobe
+          npm init -y
+          npm install puppeteer
 
-      - name: Executar gravação vídeo
+      - name: Executar script Node.js para baixar e animar imagem
         run: |
-          python grava_animacao.py "${{ github.event.inputs.url }}" "${{ github.event.inputs.entrada }}" "${{ github.event.inputs.saida }}"
+          node processar_imagem.js
 
-      - name: Upload do vídeo gerado como artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload do vídeo processado
+        uses: actions/upload-artifact@v3
         with:
-          name: video_animacao
-          path: saida.webm
+          name: video-processado
+          path: video_saida.mp4
