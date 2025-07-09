@@ -32,10 +32,8 @@ const { execSync } = require('child_process');
 
     console.log('Imagem salva em input_image.png');
 
-    // Definir duração total do vídeo e dimensões da imagem
     const duration = 26; // 3s entrada + 20s exibição + 3s saída
 
-    // Pega dimensões da imagem com ffprobe (usa ffmpeg -v error -show_entries stream=width,height ...)
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -47,13 +45,8 @@ const { execSync } = require('child_process');
 
     console.log(`Dimensões da imagem: width=${width}, height=${height}`);
 
-    // Cria vídeo a partir da imagem com duração total, aplicando animação de entrada e saída
-
-    // O filtro overlay com y animado:
-    // entra (3s): y = H - H*(t/3)
-    // fica (20s): y = 0
-    // sai (3s): y = (t-23)*(H/3)
-    // fora desse tempo y = H (fora da tela)
+    // Agora cria o vídeo webm usando VP9 codec
+    // Loop da imagem e aplica animação overlay
 
     const ffmpegCmd = [
       'ffmpeg',
@@ -62,18 +55,19 @@ const { execSync } = require('child_process');
       '-f', 'lavfi',
       '-i', `color=black:s=${width}x${height}:d=${duration}`,
       '-filter_complex',
-      "[1:v][0:v]overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':shortest=1,format=yuv420p",
+      "[1:v][0:v]overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':shortest=1,format=yuva420p",
       '-t', `${duration}`,
-      '-c:v', 'libx264',
-      '-pix_fmt', 'yuv420p',
+      '-c:v', 'libvpx-vp9',
+      '-pix_fmt', 'yuva420p',
+      '-auto-alt-ref', '0',
       '-y',
-      'video_saida.mp4'
+      'video_saida.webm'
     ].join(' ');
 
     console.log('Executando ffmpeg para criar vídeo animado...');
     execSync(ffmpegCmd, { stdio: 'inherit' });
 
-    console.log('Vídeo animado criado com sucesso: video_saida.mp4');
+    console.log('Vídeo animado criado com sucesso: video_saida.webm');
   } catch (err) {
     console.error('Erro:', err);
     process.exit(1);
