@@ -1,38 +1,38 @@
-name: Remover fundo do vídeo automático
+name: Gravar Vídeo Animação
 
 on:
   workflow_dispatch:
+    inputs:
+      url:
+        description: 'URL da página com animação (ex: http://localhost:8000/index.html)'
+        required: true
+      entrada:
+        description: 'Nome da animação de entrada (ex: fadeIn)'
+        required: true
+        default: 'fadeIn'
+      saida:
+        description: 'Nome da animação de saída (ex: fadeOut)'
+        required: true
+        default: 'fadeOut'
 
 jobs:
-  download_and_remove_background:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Clonar repositório
-      uses: actions/checkout@v4
+      - name: Checar código (opcional)
+        uses: actions/checkout@v3
 
-    - name: 🔧 Configurar Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
+      - name: Instalar Python e dependências
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.10
 
-    - name: 🚀 Instalar dependências Node.js
-      run: npm install puppeteer
+      - name: Instalar pyppeteer
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyppeteer
 
-    - name: 🛠️ Instalar FFmpeg e Python OpenCV
-      run: |
-        sudo apt update
-        sudo apt install -y ffmpeg python3 python3-pip
-        pip3 install opencv-python numpy
-
-    - name: 📥 Baixar vídeo via Puppeteer
-      run: node baixar_video.js
-
-    - name: 🐍 Remover fundo do vídeo (Python)
-      run: python3 remover_fundo.py
-
-    - name: 📤 Publicar artefato (vídeo final)
-      uses: actions/upload-artifact@v4
-      with:
-        name: video_fundo_removido
-        path: videos/video_fundo_removido.webm
+      - name: Executar gravação vídeo
+        run: |
+          python grava_animacao.py "${{ github.event.inputs.url }}" "${{ github.event.inputs.entrada }}" "${{ github.event.inputs.saida }}"
