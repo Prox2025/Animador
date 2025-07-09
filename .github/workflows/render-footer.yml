@@ -28,7 +28,7 @@ jobs:
           node processar_imagem.js
 
       - name: Upload do vídeo processado
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: video-processado
-          path: video_saida.mp4
+          path: video_saida.webm
