@@ -36,3 +36,9 @@ jobs:
       - name: Executar gravação vídeo
         run: |
           python grava_animacao.py "${{ github.event.inputs.url }}" "${{ github.event.inputs.entrada }}" "${{ github.event.inputs.saida }}"
+
+      - name: Upload do vídeo gerado como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video_animacao
+          path: saida.webm
