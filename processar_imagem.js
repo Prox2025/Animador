@@ -29,9 +29,9 @@ const { execSync, execFileSync } = require('child_process');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
 
-    const duration = 26; // total duração (3s entrada + 20s parada + 3s saída)
+    const duration = 26; // duração total
 
-    // Pega dimensões da imagem
+    // Obtém dimensões da imagem
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -42,26 +42,21 @@ const { execSync, execFileSync } = require('child_process');
 
     console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
-    /*
-      - Criamos uma "fake" entrada de vídeo transparente color=rgba(0,0,0,0)
-      - Usamos overlay da imagem sobre essa tela transparente
-      - A posição vertical 'y' da imagem é animada para:
-        * entrar do lado de baixo (altura do vídeo para 0) nos 3 primeiros segundos
-        * ficar parada (y=0) durante 20 segundos
-        * sair deslizando para baixo (de y=0 até altura do vídeo) nos últimos 3 segundos
-    */
+    // Filtro animando y da imagem (slide de baixo para cima e saída para baixo)
+    // Usando pad para preservar transparência real
 
-    const filter = `[1:v]format=rgba,trim=duration=${duration},setpts=PTS-STARTPTS[bg];` +
-                   `[0:v]format=rgba,setpts=PTS-STARTPTS,` +
-                   `scale=${width}:${height}[img];` +
-                   `[bg][img]overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':format=auto:shortest=1`;
+    const filter = `[0:v]format=rgba,` +
+                   `fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,` +
+                   `scale=${width}:${height},` +
+                   `pad=iw:ih:0:0:color=0x00000000,` +
+                   `setpts=PTS-STARTPTS,` +
+                   `overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':format=yuva420p:shortest=1[outv]`;
 
     const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
-      '-f', 'lavfi',
-      '-i', `color=0x00000000:s=${width}x${height}:d=${duration}`, // fundo transparente
       '-filter_complex', filter,
+      '-map', '[outv]',
       '-t', `${duration}`,
       '-c:v', 'libvpx-vp9',
       '-pix_fmt', 'yuva420p',
@@ -74,7 +69,7 @@ const { execSync, execFileSync } = require('child_process');
 
     execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
 
-    console.log('✅ Vídeo com transparência e animação salvo como video_saida.webm');
+    console.log('✅ Vídeo final transparente e animado salvo como video_saida.webm');
 
   } catch (err) {
     console.error('❌ Erro:', err);
