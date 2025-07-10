@@ -1,14 +1,29 @@
 const fs = require('fs');
 const puppeteer = require('puppeteer');
 const { execFileSync } = require('child_process');
-const path = require('path');
+
+function getImageDimensions(filename) {
+  try {
+    const stdout = execFileSync('ffprobe', [
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=width,height',
+      '-of', 'csv=p=0:s=x',
+      filename
+    ], { encoding: 'utf-8' });
+    const [width, height] = stdout.trim().split('x').map(Number);
+    return { width, height };
+  } catch (error) {
+    throw new Error('Erro ao obter dimensões da imagem via ffprobe: ' + error.message);
+  }
+}
 
 (async () => {
   console.log("🚀 Iniciando Puppeteer...");
 
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'] // <-- flags para ambientes restritos
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
 
   const page = await browser.newPage();
@@ -18,7 +33,7 @@ const path = require('path');
   });
 
   const jsonData = await page.evaluate(() => JSON.parse(document.body.innerText));
-  console.log("✅ JSON obtidos da página: ", Object.keys(jsonData));
+  console.log("✅ JSON obtido da página:", Object.keys(jsonData));
 
   const imageBase64 = jsonData.image_base64;
   const imageBuffer = Buffer.from(imageBase64, 'base64');
@@ -27,17 +42,13 @@ const path = require('path');
 
   await browser.close();
 
-  // Detecta dimensões da imagem
-  const sizeOf = require('image-size');
-  const dimensions = sizeOf('input_image.png');
-  const width = dimensions.width;
-  const height = dimensions.height;
+  // Usar ffprobe para pegar dimensões
+  const { width, height } = getImageDimensions('input_image.png');
   const duration = 26;
 
   console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
   console.log("🎬 Executando FFmpeg...");
 
-  // Filter para animação de entrada (fade up) e saída (fade down) mantendo transparência
   const filterComplex = `[0:v]format=rgba,fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,setpts=PTS-STARTPTS,\
 crop=iw:ih:'0':'if(lt(t,3), ih-(ih*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(ih/3), ih)))'[outv]`;
 
@@ -55,7 +66,6 @@ crop=iw:ih:'0':'if(lt(t,3), ih-(ih*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(ih
     ], { stdio: 'inherit' });
 
     console.log("✅ Vídeo salvo com sucesso: video_saida.webm");
-
   } catch (error) {
     console.error("❌ Erro ao processar:", error);
     process.exit(1);
