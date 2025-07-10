@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 
 (async () => {
   try {
@@ -31,7 +31,6 @@ const { execSync } = require('child_process');
 
     const duration = 26; // 3s entrada + 20s fixo + 3s saída
 
-    // Obter dimensões com ffprobe
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -43,7 +42,6 @@ const { execSync } = require('child_process');
 
     console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
-    // Montar os argumentos do FFmpeg corretamente
     const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
@@ -60,7 +58,8 @@ const { execSync } = require('child_process');
     ];
 
     console.log('🎬 Executando FFmpeg...');
-    execSync('ffmpeg ' + ffmpegArgs.map(arg => `'${arg}'`).join(' '), { stdio: 'inherit' });
+
+    execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
 
     console.log('✅ Vídeo animado salvo como video_saida.webm');
 
