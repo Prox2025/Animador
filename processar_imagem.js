@@ -31,7 +31,7 @@ const { execSync } = require('child_process');
 
     const duration = 26; // 3 entrada + 20 fixo + 3 saída
 
-    // Obter largura e altura com ffprobe
+    // Obter largura e altura da imagem com ffprobe
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -43,7 +43,7 @@ const { execSync } = require('child_process');
 
     console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
-    // Comando FFmpeg com animações
+    // Comando FFmpeg com animação de entrada e saída
     const ffmpegCmd = [
       'ffmpeg',
       '-loop', '1',
@@ -63,7 +63,7 @@ const { execSync } = require('child_process');
     console.log('🎬 Executando FFmpeg...');
     execSync(ffmpegCmd, { stdio: 'inherit' });
 
-    console.log('✅ Vídeo salvo como video_saida.webm');
+    console.log('✅ Vídeo animado salvo como video_saida.webm');
 
   } catch (err) {
     console.error('❌ Erro:', err);
