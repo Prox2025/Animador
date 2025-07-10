@@ -29,7 +29,7 @@ const { execSync, execFileSync } = require('child_process');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
 
-    const duration = 26; // duração total
+    const duration = 26; // duração total do vídeo
 
     // Obtém dimensões da imagem
     const ffprobeOutput = execSync(
@@ -42,15 +42,13 @@ const { execSync, execFileSync } = require('child_process');
 
     console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
-    // Filtro animando y da imagem (slide de baixo para cima e saída para baixo)
-    // Usando pad para preservar transparência real
-
+    // Filtro complexo corrigido, sem usar 'format=yuva420p' no overlay
     const filter = `[0:v]format=rgba,` +
                    `fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,` +
                    `scale=${width}:${height},` +
                    `pad=iw:ih:0:0:color=0x00000000,` +
                    `setpts=PTS-STARTPTS,` +
-                   `overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':format=yuva420p:shortest=1[outv]`;
+                   `overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':shortest=1[outv]`;
 
     const ffmpegArgs = [
       '-loop', '1',
@@ -66,9 +64,7 @@ const { execSync, execFileSync } = require('child_process');
     ];
 
     console.log('🎬 Executando FFmpeg...');
-
     execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
-
     console.log('✅ Vídeo final transparente e animado salvo como video_saida.webm');
 
   } catch (err) {
