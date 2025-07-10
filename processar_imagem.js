@@ -15,14 +15,13 @@ const { execSync, execFileSync } = require('child_process');
     await browser.close();
 
     const data = JSON.parse(jsonContent);
-
     if (!data.image_base64) throw new Error('❌ Campo image_base64 não encontrado no JSON');
 
     const buffer = Buffer.from(data.image_base64, 'base64');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
 
-    // Obter dimensões da imagem
+    // Pega dimensões da imagem
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -32,16 +31,26 @@ const { execSync, execFileSync } = require('child_process');
 
     const duration = 26;
 
+    // Filtros para entrada/saída com transparência mantida e movimento vertical suave
+    const filterComplex = `
+      [1:v][0:v]overlay=x=0:y='
+        if(lt(t,3), H-(H*t/3),
+          if(lt(t,23), 0,
+            if(lt(t,26), (t-23)*(H/3), H)
+          )
+        )
+      ':format=auto:shortest=1
+    `.replace(/\s+/g, ''); // Remove quebras para o shell
+
     const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
 
-      // fundo transparente (nullsrc)
+      // Fundo transparente sem cor
       '-f', 'lavfi',
-      '-i', `nullsrc=s=${width}x${height}:d=${duration}`,
+      '-i', `nullsrc=size=${width}x${height}:duration=${duration}:rate=30`,
 
-      '-filter_complex',
-      `[1:v][0:v]overlay=x=0:y='if(lt(t,3),H-(H*t/3),if(lt(t,23),0,if(lt(t,26),(t-23)*(H/3),H)))':shortest=1,format=yuva420p`,
+      '-filter_complex', filterComplex,
 
       '-t', `${duration}`,
       '-c:v', 'libvpx-vp9',
@@ -54,7 +63,7 @@ const { execSync, execFileSync } = require('child_process');
     console.log('🎬 Executando FFmpeg...');
     execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
 
-    console.log('✅ Vídeo com animação e transparência salvo como video_saida.webm');
+    console.log('✅ Vídeo salvo com fundo transparente em video_saida.webm');
 
   } catch (err) {
     console.error('❌ Erro:', err);
