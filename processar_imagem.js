@@ -29,9 +29,9 @@ const { execSync } = require('child_process');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
 
-    const duration = 26; // 3 entrada + 20 fixo + 3 saída
+    const duration = 26; // 3s entrada + 20s fixo + 3s saída
 
-    // Obter largura e altura da imagem com ffprobe
+    // Obter dimensões com ffprobe
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -43,25 +43,24 @@ const { execSync } = require('child_process');
 
     console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
-    // Comando FFmpeg com animação de entrada e saída
-    const ffmpegCmd = [
-      'ffmpeg',
+    // Montar os argumentos do FFmpeg corretamente
+    const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
       '-f', 'lavfi',
       '-i', `color=black:s=${width}x${height}:d=${duration}`,
       '-filter_complex',
-      `[1:v][0:v]overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':shortest=1,format=yuva420p`,
+      `[1:v][0:v]overlay=x=0:y='if(lt(t,3),H-(H*t/3),if(lt(t,23),0,if(lt(t,26),(t-23)*(H/3),H)))':shortest=1,format=yuva420p`,
       '-t', `${duration}`,
       '-c:v', 'libvpx-vp9',
       '-pix_fmt', 'yuva420p',
       '-auto-alt-ref', '0',
       '-y',
       'video_saida.webm'
-    ].join(' ');
+    ];
 
     console.log('🎬 Executando FFmpeg...');
-    execSync(ffmpegCmd, { stdio: 'inherit' });
+    execSync('ffmpeg ' + ffmpegArgs.map(arg => `'${arg}'`).join(' '), { stdio: 'inherit' });
 
     console.log('✅ Vídeo animado salvo como video_saida.webm');
 
