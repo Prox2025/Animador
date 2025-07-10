@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync, execSync } = require('child_process');
 
 (async () => {
   try {
@@ -20,55 +20,43 @@ const { execSync, execFileSync } = require('child_process');
     fs.writeFileSync('image_data.json', jsonContent);
 
     const data = JSON.parse(jsonContent);
-
-    if (!data.image_base64) {
-      throw new Error('❌ Campo image_base64 não encontrado no JSON');
-    }
+    if (!data.image_base64) throw new Error('❌ Campo image_base64 não encontrado');
 
     const buffer = Buffer.from(data.image_base64, 'base64');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
 
-    const duration = 26; // 3s entrada + 20s fixo + 3s saída
+    // Detecta tamanho da imagem
+    const ffprobe = execSync('ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png', { encoding: 'utf-8' });
+    const dimensions = JSON.parse(ffprobe).streams[0];
+    const width = dimensions.width;
+    const height = dimensions.height;
 
-    // Obter dimensões da imagem com ffprobe
-    const ffprobeOutput = execSync(
-      'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
-      { encoding: 'utf8' }
-    );
-    const meta = JSON.parse(ffprobeOutput);
-    const imageStream = meta.streams[0];
-    const width = imageStream.width;
-    const height = imageStream.height;
+    console.log(`📐 Dimensões detectadas: ${width}x${height}`);
 
-    console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
-
-    // Gerar animação com fundo transparente
-    const filter = `[0:v]format=rgba,fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,` +
-                   `scale=${width}:${height},` +
-                   `pad=iw:ih:0:0:color=0x00000000[outv]`;
+    const duration = 26;
 
     const ffmpegArgs = [
-      '-loop', '1',
       '-i', 'input_image.png',
-      '-filter_complex', filter,
-      '-map', '[outv]',
+      '-f', 'lavfi',
+      '-i', `color=color=0x00000000:s=${width}x${height}:d=${duration}`, // fundo transparente
+      '-filter_complex',
+      `[1:v][0:v]overlay=x=0:y='if(lt(t,3),H-(H*t/3),if(lt(t,23),0,if(lt(t,26),(t-23)*(H/3),H)))':shortest=1,format=yuva420p`,
       '-t', `${duration}`,
       '-c:v', 'libvpx-vp9',
       '-pix_fmt', 'yuva420p',
       '-auto-alt-ref', '0',
-      '-y',
-      'video_saida.webm'
+      '-y', 'video_saida.webm'
     ];
 
-    console.log('🎬 Executando FFmpeg...');
+    console.log('🎬 Executando FFmpeg com animação e transparência...');
 
     execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
 
-    console.log('✅ Vídeo com transparência salvo como video_saida.webm');
+    console.log('✅ Vídeo final com animação + transparência salvo como video_saida.webm');
 
   } catch (err) {
-    console.error('❌ Erro:', err);
+    console.error('❌ Erro:', err.message || err);
     process.exit(1);
   }
 })();
