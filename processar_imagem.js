@@ -31,6 +31,7 @@ const { execSync, execFileSync } = require('child_process');
 
     const duration = 26; // 3s entrada + 20s fixo + 3s saída
 
+    // Obter dimensões da imagem com ffprobe
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
@@ -42,13 +43,16 @@ const { execSync, execFileSync } = require('child_process');
 
     console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
+    // Gerar animação com fundo transparente
+    const filter = `[0:v]format=rgba,fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,` +
+                   `scale=${width}:${height},` +
+                   `pad=iw:ih:0:0:color=0x00000000[outv]`;
+
     const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
-      '-f', 'lavfi',
-      '-i', `color=black:s=${width}x${height}:d=${duration}`,
-      '-filter_complex',
-      `[1:v][0:v]overlay=x=0:y='if(lt(t,3),H-(H*t/3),if(lt(t,23),0,if(lt(t,26),(t-23)*(H/3),H)))':shortest=1,format=yuva420p`,
+      '-filter_complex', filter,
+      '-map', '[outv]',
       '-t', `${duration}`,
       '-c:v', 'libvpx-vp9',
       '-pix_fmt', 'yuva420p',
@@ -61,7 +65,7 @@ const { execSync, execFileSync } = require('child_process');
 
     execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
 
-    console.log('✅ Vídeo animado salvo como video_saida.webm');
+    console.log('✅ Vídeo com transparência salvo como video_saida.webm');
 
   } catch (err) {
     console.error('❌ Erro:', err);
