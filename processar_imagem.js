@@ -3,19 +3,16 @@ const puppeteer = require('puppeteer');
 const { execFileSync } = require('child_process');
 
 function getImageDimensions(filename) {
-  try {
-    const stdout = execFileSync('ffprobe', [
-      '-v', 'error',
-      '-select_streams', 'v:0',
-      '-show_entries', 'stream=width,height',
-      '-of', 'csv=p=0:s=x',
-      filename
-    ], { encoding: 'utf-8' });
-    const [width, height] = stdout.trim().split('x').map(Number);
-    return { width, height };
-  } catch (error) {
-    throw new Error('Erro ao obter dimensões da imagem via ffprobe: ' + error.message);
-  }
+  const { execFileSync } = require('child_process');
+  const stdout = execFileSync('ffprobe', [
+    '-v', 'error',
+    '-select_streams', 'v:0',
+    '-show_entries', 'stream=width,height',
+    '-of', 'csv=p=0:s=x',
+    filename
+  ], { encoding: 'utf-8' });
+  const [width, height] = stdout.trim().split('x').map(Number);
+  return { width, height };
 }
 
 (async () => {
@@ -42,15 +39,15 @@ function getImageDimensions(filename) {
 
   await browser.close();
 
-  // Usar ffprobe para pegar dimensões
   const { width, height } = getImageDimensions('input_image.png');
   const duration = 26;
 
   console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
   console.log("🎬 Executando FFmpeg...");
 
-  const filterComplex = `[0:v]format=rgba,fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,setpts=PTS-STARTPTS,\
-crop=iw:ih:'0':'if(lt(t,3), ih-(ih*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(ih/3), ih)))'[outv]`;
+  const filterComplex = `[0:v]format=rgba,fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,setpts=PTS-STARTPTS,scale=${width}:${height}[img];` +
+                        `color=black@0.0:s=${width}x${height}:d=${duration}[bg];` +
+                        `[bg][img]overlay=x=0:y='if(lt(t,3),H-(H*(t/3)),if(lt(t,23),0,if(lt(t,26),(t-23)*(H/3),H)))':format=auto:shortest=1[outv]`;
 
   try {
     execFileSync('ffmpeg', [
