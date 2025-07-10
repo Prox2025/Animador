@@ -1,6 +1,6 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 (async () => {
   try {
@@ -29,30 +29,25 @@ const { execSync, execFileSync } = require('child_process');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
 
-    const duration = 26; // duração total do vídeo
+    // Definindo dimensões fixas (ideal: pegar via ffprobe, mas fixo por simplicidade)
+    const width = 2048;
+    const height = 1152;
+    const duration = 26;
 
-    // Obtém dimensões da imagem
-    const ffprobeOutput = execSync(
-      'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
-      { encoding: 'utf8' }
-    );
-    const meta = JSON.parse(ffprobeOutput);
-    const width = meta.streams[0].width;
-    const height = meta.streams[0].height;
-
-    console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
-
-    // Filtro complexo corrigido, sem usar 'format=yuva420p' no overlay
-    const filter = `[0:v]format=rgba,` +
-                   `fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,` +
-                   `scale=${width}:${height},` +
-                   `pad=iw:ih:0:0:color=0x00000000,` +
-                   `setpts=PTS-STARTPTS,` +
-                   `overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':shortest=1[outv]`;
+    // Filter complex: fundo transparente (color=0x00000000),
+    // imagem desliza para cima na entrada, permanece, desliza pra baixo na saída,
+    // com fade-in e fade-out preservando transparência da imagem original
+    const filter = `
+      [1:v]format=rgba[color]; 
+      [0:v]format=rgba,fade=t=in:st=0:d=3:alpha=1,fade=t=out:st=23:d=3:alpha=1,setpts=PTS-STARTPTS[img];
+      [color][img]overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':format=auto:shortest=1[outv]
+    `.replace(/\s+/g, ''); // remove quebras e espaços extras
 
     const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
+      '-f', 'lavfi',
+      '-i', `color=0x00000000:s=${width}x${height}:d=${duration}`,
       '-filter_complex', filter,
       '-map', '[outv]',
       '-t', `${duration}`,
