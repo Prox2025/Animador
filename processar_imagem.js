@@ -32,7 +32,7 @@ const { execSync } = require('child_process');
 
     console.log('Imagem salva em input_image.png');
 
-    const duration = 26; // 3s entrada + 20s exibição + 3s saída
+    const duration = 26;
 
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
@@ -44,9 +44,6 @@ const { execSync } = require('child_process');
     const height = imageStream.height;
 
     console.log(`Dimensões da imagem: width=${width}, height=${height}`);
-
-    // Agora cria o vídeo webm usando VP9 codec
-    // Loop da imagem e aplica animação overlay
 
     const ffmpegCmd = [
       'ffmpeg',
@@ -64,10 +61,10 @@ const { execSync } = require('child_process');
       'video_saida.webm'
     ].join(' ');
 
-    console.log('Executando ffmpeg para criar vídeo animado...');
+    console.log('Executando ffmpeg...');
     execSync(ffmpegCmd, { stdio: 'inherit' });
 
-    console.log('Vídeo animado criado com sucesso: video_saida.webm');
+    console.log('Vídeo animado salvo como video_saida.webm');
   } catch (err) {
     console.error('Erro:', err);
     process.exit(1);
