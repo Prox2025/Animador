@@ -5,6 +5,7 @@ const { execSync, execFileSync } = require('child_process');
 (async () => {
   try {
     console.log('🚀 Iniciando Puppeteer...');
+
     const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
     const page = await browser.newPage();
 
@@ -14,44 +15,53 @@ const { execSync, execFileSync } = require('child_process');
     const jsonContent = await page.evaluate(() => document.body.innerText);
     await browser.close();
 
+    console.log('✅ JSON obtido da página:', jsonContent.slice(0, 100) + '...');
+
+    fs.writeFileSync('image_data.json', jsonContent);
+
     const data = JSON.parse(jsonContent);
-    if (!data.image_base64) throw new Error('❌ Campo image_base64 não encontrado no JSON');
+
+    if (!data.image_base64) {
+      throw new Error('❌ Campo image_base64 não encontrado no JSON');
+    }
 
     const buffer = Buffer.from(data.image_base64, 'base64');
     fs.writeFileSync('input_image.png', buffer);
     console.log('🖼️ Imagem salva como input_image.png');
+
+    const duration = 26; // total duração (3s entrada + 20s parada + 3s saída)
 
     // Pega dimensões da imagem
     const ffprobeOutput = execSync(
       'ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of json input_image.png',
       { encoding: 'utf8' }
     );
-    const { width, height } = JSON.parse(ffprobeOutput).streams[0];
-    console.log(`📏 Dimensões da imagem: ${width}x${height}`);
+    const meta = JSON.parse(ffprobeOutput);
+    const width = meta.streams[0].width;
+    const height = meta.streams[0].height;
 
-    const duration = 26;
+    console.log(`📏 Dimensões da imagem: largura=${width}, altura=${height}`);
 
-    // Filtros para entrada/saída com transparência mantida e movimento vertical suave
-    const filterComplex = `
-      [1:v][0:v]overlay=x=0:y='
-        if(lt(t,3), H-(H*t/3),
-          if(lt(t,23), 0,
-            if(lt(t,26), (t-23)*(H/3), H)
-          )
-        )
-      ':format=auto:shortest=1
-    `.replace(/\s+/g, ''); // Remove quebras para o shell
+    /*
+      - Criamos uma "fake" entrada de vídeo transparente color=rgba(0,0,0,0)
+      - Usamos overlay da imagem sobre essa tela transparente
+      - A posição vertical 'y' da imagem é animada para:
+        * entrar do lado de baixo (altura do vídeo para 0) nos 3 primeiros segundos
+        * ficar parada (y=0) durante 20 segundos
+        * sair deslizando para baixo (de y=0 até altura do vídeo) nos últimos 3 segundos
+    */
+
+    const filter = `[1:v]format=rgba,trim=duration=${duration},setpts=PTS-STARTPTS[bg];` +
+                   `[0:v]format=rgba,setpts=PTS-STARTPTS,` +
+                   `scale=${width}:${height}[img];` +
+                   `[bg][img]overlay=x=0:y='if(lt(t,3), H-(H*t/3), if(lt(t,23), 0, if(lt(t,26), (t-23)*(H/3), H)))':format=auto:shortest=1`;
 
     const ffmpegArgs = [
       '-loop', '1',
       '-i', 'input_image.png',
-
-      // Fundo transparente sem cor
       '-f', 'lavfi',
-      '-i', `nullsrc=size=${width}x${height}:duration=${duration}:rate=30`,
-
-      '-filter_complex', filterComplex,
-
+      '-i', `color=0x00000000:s=${width}x${height}:d=${duration}`, // fundo transparente
+      '-filter_complex', filter,
       '-t', `${duration}`,
       '-c:v', 'libvpx-vp9',
       '-pix_fmt', 'yuva420p',
@@ -61,9 +71,10 @@ const { execSync, execFileSync } = require('child_process');
     ];
 
     console.log('🎬 Executando FFmpeg...');
+
     execFileSync('ffmpeg', ffmpegArgs, { stdio: 'inherit' });
 
-    console.log('✅ Vídeo salvo com fundo transparente em video_saida.webm');
+    console.log('✅ Vídeo com transparência e animação salvo como video_saida.webm');
 
   } catch (err) {
     console.error('❌ Erro:', err);
